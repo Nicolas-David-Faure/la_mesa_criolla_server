@@ -6,12 +6,19 @@ import { getRoomsSummaryForGame } from './utils/getRoomsSummaryForGame';
 import { users } from './infoServer/users';
 
 export function handleUserConnected(io: Server, socket: Socket, data: User) {
-  const existingUser = users.get(data.userID);
+  if(!data.userID || data.userID === '' || data.userID === 'undefined') {
+    console.log('userID is required');
+    return;
+  }
 
+  const existingUser = users.get(data.userID);
+ 
   if (existingUser) {
     // Reconexión
+    console.log('reconnecting user', existingUser.userID);
     existingUser.socketID = socket.id;
     existingUser.status = 'connected';
+
 
     const game = existingUser.game;
     const roomID = existingUser.roomID;
@@ -30,7 +37,9 @@ export function handleUserConnected(io: Server, socket: Socket, data: User) {
   const user: User = { ...data, socketID: socket.id, status: 'connected' };
   users.set(data.userID, user);
   console.log('handle connected',  users);
+  socket.emit('user_connected_response', user);
 
+  console.log('user_connected_response', user);
   socket.join(`lobby-${data.game}`);
   const roomsSummary = getRoomsSummaryForGame(data.game, rooms);
   socket.emit(`rooms_updated`, roomsSummary);
